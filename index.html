@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pruebas API Bitrix</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; color: #222; }
+    h1 { font-size: 1.4rem; }
+    .endpoint { border: 1px solid #e2e6ea; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+    .row { display: flex; align-items: center; gap: 10px; }
+    .method { font: 600 12px monospace; background: #e7f1ff; color: #1c6cdb; padding: 3px 8px; border-radius: 6px; }
+    .path { font-family: monospace; font-size: 14px; }
+    button { margin-left: auto; background: #1c6cdb; color: #fff; border: 0; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #155ab8; }
+    pre { background: #0f1720; color: #d6e2f0; padding: 12px; border-radius: 8px; overflow: auto; margin: 10px 0 0; font-size: 13px; max-height: 320px; }
+    pre:empty { display: none; }
+    .desc { color: #667; font-size: 13px; margin: 4px 0 0; }
+  </style>
+</head>
+<body>
+  <h1>Pruebas de la API Bitrix</h1>
+
+  <div class="endpoint">
+    <div class="row">
+      <span class="method">GET</span>
+      <span class="path">/health</span>
+      <button onclick="probar('/health', this)">Probar</button>
+    </div>
+    <p class="desc">Comprueba que el servidor está vivo.</p>
+    <pre></pre>
+  </div>
+
+  <div class="endpoint">
+    <div class="row">
+      <span class="method">GET</span>
+      <span class="path">/bitrix/perfil</span>
+      <button onclick="probar('/bitrix/perfil', this)">Probar</button>
+    </div>
+    <p class="desc">Llama a Bitrix (método <code>profile</code>) y devuelve tu usuario.</p>
+    <pre></pre>
+  </div>
+
+  <script>
+    async function probar(ruta, boton) {
+      const salida = boton.closest('.endpoint').querySelector('pre');
+      salida.textContent = 'Cargando…';
+      try {
+        const resp = await fetch(ruta);
+        const data = await resp.json();
+        salida.textContent = `HTTP ${resp.status}\n\n` + JSON.stringify(data, null, 2);
+      } catch (e) {
+        salida.textContent = 'Error: ' + e;
+      }
+    }
+  </script>
+</body>
+</html>

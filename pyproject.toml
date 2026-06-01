@@ -1,10 +1,21 @@
 [project]
-name = "bitrix-fastapi"
+name = "bitrix"
 version = "0.1.0"
-description = "Integración Bitrix24 con FastAPI"
-requires-python = ">=3.13"
+description = "Integración FastAPI con Bitrix24"
+requires-python = ">=3.10"
 dependencies = [
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.30",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
     "httpx>=0.27",
+    "pydantic-settings>=2.2",
 ]
+
+[project.scripts]
+dev = "main:dev"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+include = ["main.py", "index.html", "integration", "core"]
