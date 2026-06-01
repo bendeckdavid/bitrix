@@ -8,14 +8,17 @@
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; color: #222; }
     h1 { font-size: 1.4rem; }
     .endpoint { border: 1px solid #e2e6ea; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
-    .row { display: flex; align-items: center; gap: 10px; }
+    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .method { font: 600 12px monospace; background: #e7f1ff; color: #1c6cdb; padding: 3px 8px; border-radius: 6px; }
     .path { font-family: monospace; font-size: 14px; }
     button { margin-left: auto; background: #1c6cdb; color: #fff; border: 0; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
     button:hover { background: #155ab8; }
+    input { padding: 7px 10px; border: 1px solid #cdd5df; border-radius: 7px; font-size: 14px; }
+    input.grow { flex: 1; min-width: 140px; }
+    label { font-size: 13px; color: #556; }
     pre { background: #0f1720; color: #d6e2f0; padding: 12px; border-radius: 8px; overflow: auto; margin: 10px 0 0; font-size: 13px; max-height: 320px; }
     pre:empty { display: none; }
-    .desc { color: #667; font-size: 13px; margin: 4px 0 0; }
+    .desc { color: #667; font-size: 13px; margin: 4px 0 10px; }
   </style>
 </head>
 <body>
@@ -25,7 +28,7 @@
     <div class="row">
       <span class="method">GET</span>
       <span class="path">/health</span>
-      <button onclick="probar('/health', this)">Probar</button>
+      <button onclick="health(this)">Probar</button>
     </div>
     <p class="desc">Comprueba que el servidor está vivo.</p>
     <pre></pre>
@@ -33,26 +36,74 @@
 
   <div class="endpoint">
     <div class="row">
-      <span class="method">GET</span>
-      <span class="path">/bitrix/perfil</span>
-      <button onclick="probar('/bitrix/perfil', this)">Probar</button>
+      <span class="method">POST</span>
+      <span class="path">/bitrix/conversaciones</span>
     </div>
-    <p class="desc">Llama a Bitrix (método <code>profile</code>) y devuelve tu usuario.</p>
+    <p class="desc">Crea una conversación (chat). Devuelve el <code>dialog_id</code>.</p>
+    <div class="row">
+      <label>Título</label>
+      <input id="titulo" class="grow" value="WhatsApp - Cliente X">
+      <button onclick="crear(this)">Crear</button>
+    </div>
+    <pre></pre>
+  </div>
+
+  <div class="endpoint">
+    <div class="row">
+      <span class="method">POST</span>
+      <span class="path">/bitrix/conversaciones/{dialog_id}/mensajes</span>
+    </div>
+    <p class="desc">Registra un mensaje en la conversación.</p>
+    <div class="row">
+      <label>dialog_id</label>
+      <input id="dlgEnviar" placeholder="chat15" style="width:110px">
+      <input id="texto" class="grow" value="Mensaje del canal externo">
+      <button onclick="enviar(this)">Enviar</button>
+    </div>
+    <pre></pre>
+  </div>
+
+  <div class="endpoint">
+    <div class="row">
+      <span class="method">GET</span>
+      <span class="path">/bitrix/conversaciones/{dialog_id}/mensajes</span>
+    </div>
+    <p class="desc">Lee los últimos mensajes de la conversación.</p>
+    <div class="row">
+      <label>dialog_id</label>
+      <input id="dlgLeer" placeholder="chat15" style="width:110px">
+      <button onclick="leer(this)">Leer</button>
+    </div>
     <pre></pre>
   </div>
 
   <script>
-    async function probar(ruta, boton) {
-      const salida = boton.closest('.endpoint').querySelector('pre');
-      salida.textContent = 'Cargando…';
+    function salida(boton) { return boton.closest('.endpoint').querySelector('pre'); }
+
+    async function pedir(ruta, opciones, boton) {
+      const out = salida(boton);
+      out.textContent = 'Cargando…';
       try {
-        const resp = await fetch(ruta);
+        const resp = await fetch(ruta, opciones);
         const data = await resp.json();
-        salida.textContent = `HTTP ${resp.status}\n\n` + JSON.stringify(data, null, 2);
+        out.textContent = `HTTP ${resp.status}\n\n` + JSON.stringify(data, null, 2);
+        return data;
       } catch (e) {
-        salida.textContent = 'Error: ' + e;
+        out.textContent = 'Error: ' + e;
       }
     }
+
+    const json = (body) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+
+    const health = (b) => pedir('/health', {}, b);
+
+    async function crear(b) {
+      const data = await pedir('/bitrix/conversaciones', json({ title: titulo.value }), b);
+      if (data && data.dialog_id) { dlgEnviar.value = data.dialog_id; dlgLeer.value = data.dialog_id; }
+    }
+
+    const enviar = (b) => pedir(`/bitrix/conversaciones/${dlgEnviar.value}/mensajes`, json({ text: texto.value }), b);
+    const leer   = (b) => pedir(`/bitrix/conversaciones/${dlgLeer.value}/mensajes?limit=10`, {}, b);
   </script>
 </body>
 </html>
