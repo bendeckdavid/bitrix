@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 .env
+tokens.json
+bot.json
+logo.png

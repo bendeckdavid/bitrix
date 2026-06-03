@@ -8,21 +8,22 @@
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; color: #222; }
     h1 { font-size: 1.4rem; }
     .endpoint { border: 1px solid #e2e6ea; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
-    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
     .method { font: 600 12px monospace; background: #e7f1ff; color: #1c6cdb; padding: 3px 8px; border-radius: 6px; }
     .path { font-family: monospace; font-size: 14px; }
     button { margin-left: auto; background: #1c6cdb; color: #fff; border: 0; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
     button:hover { background: #155ab8; }
     input { padding: 7px 10px; border: 1px solid #cdd5df; border-radius: 7px; font-size: 14px; }
     input.grow { flex: 1; min-width: 140px; }
-    label { font-size: 13px; color: #556; }
+    label { font-size: 13px; color: #556; width: 80px; }
     pre { background: #0f1720; color: #d6e2f0; padding: 12px; border-radius: 8px; overflow: auto; margin: 10px 0 0; font-size: 13px; max-height: 320px; }
     pre:empty { display: none; }
-    .desc { color: #667; font-size: 13px; margin: 4px 0 10px; }
+    .desc { color: #667; font-size: 13px; margin: 4px 0 0; }
   </style>
 </head>
 <body>
   <h1>Pruebas de la API Bitrix</h1>
+  <p class="desc">App externa → este código → chat normal de Bitrix (un chat por conversación).</p>
 
   <div class="endpoint">
     <div class="row">
@@ -37,13 +38,32 @@
   <div class="endpoint">
     <div class="row">
       <span class="method">POST</span>
-      <span class="path">/bitrix/conversaciones</span>
+      <span class="path">/bitrix/mensajes</span>
     </div>
-    <p class="desc">Crea una conversación (chat). Devuelve el <code>dialog_id</code>.</p>
+    <p class="desc">Publica un mensaje en el chat de la conversación (vía el bot).</p>
     <div class="row">
-      <label>Título</label>
-      <input id="titulo" class="grow" value="WhatsApp - Cliente X">
-      <button onclick="crear(this)">Crear</button>
+      <label>conv. id</label>
+      <input id="conv" class="grow" value="conv-001">
+    </div>
+    <div class="row">
+      <label>canal</label>
+      <input id="channel" class="grow" value="whatsapp">
+    </div>
+    <div class="row">
+      <label>cuenta</label>
+      <input id="account" class="grow" value="+573246760">
+    </div>
+    <div class="row">
+      <label>quién</label>
+      <input id="sender" class="grow" value="👤 Sofía">
+    </div>
+    <div class="row">
+      <label>texto</label>
+      <input id="texto" class="grow" value="Hola, ¿envían a Medellín?">
+      <button onclick="enviar(this)">Enviar</button>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="sistema"> mensaje de sistema (informativo, sin remitente)</label>
     </div>
     <pre></pre>
   </div>
@@ -51,28 +71,29 @@
   <div class="endpoint">
     <div class="row">
       <span class="method">POST</span>
-      <span class="path">/bitrix/conversaciones/{dialog_id}/mensajes</span>
+      <span class="path">/bitrix/quantum</span>
     </div>
-    <p class="desc">Registra un mensaje en la conversación.</p>
+    <p class="desc">Webhook entrante de quantum: mensaje de cliente → chat de Bitrix.</p>
     <div class="row">
-      <label>dialog_id</label>
-      <input id="dlgEnviar" placeholder="chat15" style="width:110px">
-      <input id="texto" class="grow" value="Mensaje del canal externo">
-      <button onclick="enviar(this)">Enviar</button>
+      <label>user_hash</label>
+      <input id="q_hash" class="grow" value="1ecda0b5|573246760284_87">
     </div>
-    <pre></pre>
-  </div>
-
-  <div class="endpoint">
     <div class="row">
-      <span class="method">GET</span>
-      <span class="path">/bitrix/conversaciones/{dialog_id}/mensajes</span>
+      <label>canal</label>
+      <input id="q_channel" class="grow" value="whatsapp">
     </div>
-    <p class="desc">Lee los últimos mensajes de la conversación.</p>
     <div class="row">
-      <label>dialog_id</label>
-      <input id="dlgLeer" placeholder="chat15" style="width:110px">
-      <button onclick="leer(this)">Leer</button>
+      <label>nombre</label>
+      <input id="q_name" class="grow" value="David">
+    </div>
+    <div class="row">
+      <label>teléfono</label>
+      <input id="q_phone" class="grow" value="573246760284">
+    </div>
+    <div class="row">
+      <label>texto</label>
+      <input id="q_text" class="grow" value="Hola, ¿tienen stock?">
+      <button onclick="quantum(this)">Enviar</button>
     </div>
     <pre></pre>
   </div>
@@ -87,7 +108,6 @@
         const resp = await fetch(ruta, opciones);
         const data = await resp.json();
         out.textContent = `HTTP ${resp.status}\n\n` + JSON.stringify(data, null, 2);
-        return data;
       } catch (e) {
         out.textContent = 'Error: ' + e;
       }
@@ -96,14 +116,14 @@
     const json = (body) => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
 
     const health = (b) => pedir('/health', {}, b);
-
-    async function crear(b) {
-      const data = await pedir('/bitrix/conversaciones', json({ title: titulo.value }), b);
-      if (data && data.dialog_id) { dlgEnviar.value = data.dialog_id; dlgLeer.value = data.dialog_id; }
-    }
-
-    const enviar = (b) => pedir(`/bitrix/conversaciones/${dlgEnviar.value}/mensajes`, json({ text: texto.value }), b);
-    const leer   = (b) => pedir(`/bitrix/conversaciones/${dlgLeer.value}/mensajes?limit=10`, {}, b);
+    const enviar = (b) => pedir('/bitrix/mensajes', json({
+      conversation_id: conv.value, sender: sender.value, text: texto.value, system: sistema.checked,
+      channel: channel.value, account: account.value,
+    }), b);
+    const quantum = (b) => pedir('/bitrix/quantum', json({
+      user_hash: q_hash.value, message: q_text.value, message_channel: q_channel.value,
+      user_data: { nombre: q_name.value, telefono: q_phone.value },
+    }), b);
   </script>
 </body>
 </html>
