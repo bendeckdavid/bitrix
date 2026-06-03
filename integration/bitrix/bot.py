@@ -18,8 +18,6 @@ async def bot_id() -> int:
         "CODE": BOT_CODE,
         "TYPE": "S",  # supervisor: recibe TODOS los mensajes del chat (sin @mención)
         "EVENT_MESSAGE_ADD": handler,
-        "EVENT_WELCOME_MESSAGE": handler,
-        "EVENT_BOT_DELETE": handler,
         "PROPERTIES": {"NAME": BOT_NAME},
     }))["result"]
     _BOT_FILE.write_text(json.dumps({"bot_id": bid}))

@@ -4,6 +4,6 @@ services:
     image: ngrok/ngrok:latest
     env_file: [.env]
     entrypoint: ["/bin/sh", "-c"]
-    command: ["ngrok http --url=$$PUBLIC_URL host.docker.internal:8100"]
+    command: ["ngrok http --url=$$APP_BASE_URL host.docker.internal:8100"]
     ports: ["4040:4040"]
     extra_hosts: ["host.docker.internal:host-gateway"]

@@ -14,7 +14,7 @@ CHANNELS = {
 }
 
 
-def _title(channel: str, account: str, conversation_id: str) -> str:
+def _title(channel: str, account: str) -> str:
     circle, name = CHANNELS.get(channel.lower(), ("⚪", channel.title() or "Chat"))
     label = f"{circle} {name}"
     return f"{label} · {account}" if account else label
@@ -30,7 +30,7 @@ async def _chat_id(conversation_id: str, channel: str = "", account: str = "") -
     if found:
         return found["ID"]
     params = {
-        "TITLE": _title(channel, account, conversation_id),
+        "TITLE": _title(channel, account),
         "ENTITY_TYPE": ENTITY_TYPE,
         "ENTITY_ID": conversation_id,
         "USERS": AGENT_IDS + [await bot.bot_id()],

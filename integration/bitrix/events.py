@@ -10,35 +10,26 @@ def parse_agent_message(form) -> dict | None:
         return None
     if form.get("data[PARAMS][CHAT_ENTITY_TYPE]") != "IA_CONV":
         return None
-    if form.get("data[USER][IS_BOT]") != "N":
+    if form.get("data[USER][IS_BOT]") != "N":  # ignora el propio bot → evita bucle
         return None
     if form.get("data[PARAMS][SYSTEM]") == "Y":
         return None
-    return {
-        "conversation_id": form.get("data[PARAMS][CHAT_ENTITY_ID]"),
-        "text": form.get("data[PARAMS][MESSAGE]", ""),
-        "author": form.get("data[USER][NAME]"),
-        "files": _files(form),
-    }
+    text = form.get("data[PARAMS][MESSAGE]", "") or _first_file_url(form)
+    if not text:
+        return None
+    return {"conversation_id": form.get("data[PARAMS][CHAT_ENTITY_ID]"), "text": text}
 
 
-def _files(form) -> list[dict]:
-    ids = {k[len(_FILES_PREFIX):].split("]")[0] for k in form if k.startswith(_FILES_PREFIX)}
-    return [{
-        "name": form.get(f"{_FILES_PREFIX}{i}][name]"),
-        "url": form.get(f"{_FILES_PREFIX}{i}][urlDownload]"),
-        "is_image": form.get(f"{_FILES_PREFIX}{i}][image]") == "1",
-    } for i in sorted(ids)]
+def _first_file_url(form) -> str:
+    ids = sorted({k[len(_FILES_PREFIX):].split("]")[0] for k in form if k.startswith(_FILES_PREFIX)})
+    return next((u for i in ids if (u := form.get(f"{_FILES_PREFIX}{i}][urlDownload]"))), "")
 
 
 async def forward_to_platform(msg: dict) -> None:
-    text = msg["text"] or next((f["url"] for f in msg["files"] if f.get("url")), "")
-    if not text:
-        return
     s = get_settings()
     async with httpx.AsyncClient(timeout=10) as c:
         await c.post(
             f"{s.quantum_url}/api/agent-messages",
             headers={"X-API-Key": s.quantum_api_key},
-            json={"user_hash": msg["conversation_id"], "message": text},
+            json={"user_hash": msg["conversation_id"], "message": msg["text"]},
         )
