@@ -1,11 +1,14 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 
+from integration.mcp.server import mcp
 from integration.bitrix.client import BitrixError
 from integration.bitrix.router import router as bitrix_router
 
-app = FastAPI()
+mcp_app = mcp.http_app(path="/")
+app = FastAPI(lifespan=mcp_app.lifespan)
 app.include_router(bitrix_router)
+app.mount("/mcp", mcp_app)
 
 
 @app.exception_handler(BitrixError)

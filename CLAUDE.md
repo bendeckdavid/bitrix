@@ -6,7 +6,7 @@ FastAPI + Bitrix24 **App Local (OAuth)**. Run: `uv run dev` → http://localhost
 Descartado Open Lines/conector (fricción al publicar como bot/operador en sesiones).
 
 ## Layout (1 responsabilidad / archivo)
-- `main.py` — app, monta router, handler `BitrixError`→400, `GET /` (index.html), `GET /health`, `dev()`.
+- `main.py` — app (con `lifespan` del MCP), monta router + MCP en `/mcp`, handler `BitrixError`→400, `GET /` (index.html), `GET /health`, `dev()`.
 - `core/settings.py` — única `Settings` (pydantic-settings, `extra=ignore`) + `get_settings()` (lru_cache): `bitrix_client_id`, `bitrix_client_secret`, `app_base_url`, `quantum_url`, `quantum_api_key`. **Config nueva = un campo aquí.**
 - `integration/bitrix/auth.py` — OAuth en `tokens.json` (gitignored): `save/load/refresh` (refresh vía oauth.bitrix.info). Bitrix entrega los tokens al instalar.
 - `integration/bitrix/client.py` — `call(method, params)` REST con token OAuth; auto-`refresh` y 1 reintento si `expired_token`; sin tokens → `BitrixError("not_installed", …)`. `BitrixError(code, description)`.
@@ -15,6 +15,7 @@ Descartado Open Lines/conector (fricción al publicar como bot/operador en sesio
 - `integration/bitrix/events.py` — `parse_agent_message(form)`: devuelve `{conversation_id, text}` solo si `ONIMBOTMESSAGEADD` + `CHAT_ENTITY_TYPE=IA_CONV` + `IS_BOT=N` (ignora el propio bot → evita bucle) + no `SYSTEM=Y` + hay texto (o, en su defecto, URL del primer adjunto); si no, `None`. `forward_to_platform(msg)`: `POST {quantum_url}/api/agent-messages` con header `X-API-Key` y `{user_hash, message}`.
 - `integration/bitrix/schemas.py` — pydantic. `NewMessage`: `conversation_id`, `text`, `sender=""`, `system=False`, `channel=""`, `account=""`. `QuantumMessage`: `user_hash`, `message`, `message_channel=""`, `user_data=None`.
 - `integration/bitrix/router.py` — prefix `/bitrix`: `POST /install` (guarda tokens; acepta formato con UI `DOMAIN/AUTH_ID/REFRESH_ID` y evento `ONAPPINSTALL` `auth[domain]/auth[access_token]/…`), `POST /bot` (vuelta agente→plataforma), `POST /mensajes` (ida genérica, `NewMessage`), `POST /quantum` (ida desde Quantum, `QuantumMessage`: mapea `user_hash`→conversación, `👤 nombre`→sender, `telefono`→account).
+- `integration/mcp/server.py` — servidor MCP (FastMCP 3, Streamable HTTP). Expone la instancia `mcp`; las tools se declaran aquí con `@mcp.tool` y delegan en `integration.bitrix`. Se monta en `/mcp` desde `main.py`. **Aún SIN tools.**
 - `index.html` — página de pruebas manual.
 - `docker-compose.yml` — túnel `ngrok` (URL fija `APP_BASE_URL` del `.env`) → `host:8100`.
 
