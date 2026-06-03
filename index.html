@@ -7,23 +7,29 @@
   <style>
     body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; color: #222; }
     h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.05rem; margin: 28px 0 6px; color: #334; border-top: 1px solid #e2e6ea; padding-top: 18px; }
     .endpoint { border: 1px solid #e2e6ea; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
     .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
     .method { font: 600 12px monospace; background: #e7f1ff; color: #1c6cdb; padding: 3px 8px; border-radius: 6px; }
+    .method.mcp { background: #efe7ff; color: #6b3fd1; }
     .path { font-family: monospace; font-size: 14px; }
     button { margin-left: auto; background: #1c6cdb; color: #fff; border: 0; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
     button:hover { background: #155ab8; }
+    button:disabled { background: #9bb7e6; cursor: progress; }
     input { padding: 7px 10px; border: 1px solid #cdd5df; border-radius: 7px; font-size: 14px; }
     input.grow { flex: 1; min-width: 140px; }
     label { font-size: 13px; color: #556; width: 80px; }
-    pre { background: #0f1720; color: #d6e2f0; padding: 12px; border-radius: 8px; overflow: auto; margin: 10px 0 0; font-size: 13px; max-height: 320px; }
+    pre { background: #0f1720; color: #d6e2f0; padding: 12px; border-radius: 8px; overflow: auto; margin: 10px 0 0; font-size: 13px; max-height: 360px; white-space: pre-wrap; }
     pre:empty { display: none; }
     .desc { color: #667; font-size: 13px; margin: 4px 0 0; }
+    code { background: #f0f2f5; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
   </style>
 </head>
 <body>
   <h1>Pruebas de la API Bitrix</h1>
-  <p class="desc">App externa → este código → chat normal de Bitrix (un chat por conversación).</p>
+  <p class="desc">App externa → este código → chat de Bitrix. Además, servidor MCP en <code>/mcp</code> con las tools de scraping de destinos avioa.</p>
+
+  <h2>Bitrix REST</h2>
 
   <div class="endpoint">
     <div class="row">
@@ -98,19 +104,48 @@
     <pre></pre>
   </div>
 
+  <h2>MCP · destinos avioa <span class="desc">(llama a las tools por el protocolo MCP en <code>/mcp</code>)</span></h2>
+
   <div class="endpoint">
     <div class="row">
-      <span class="method">MCP</span>
-      <span class="path">/mcp</span>
+      <span class="method mcp">tool</span>
+      <span class="path">get_destino</span>
     </div>
-    <p class="desc">Servidor MCP (Streamable HTTP). Tool: <code>scrape_destino(url, nombre, codigo)</code> → markdown de un destino avioa (optimizado para LLM) y lo guarda en <code>destinos.json</code>. Se prueba con un cliente MCP, no con botón:</p>
-    <pre>npx @modelcontextprotocol/inspector
-# Transport: Streamable HTTP · URL: /mcp</pre>
+    <p class="desc">Devuelve el markdown del destino guardado en <code>destinos.json</code> (no re-scrapea). Código inválido → mensaje con sugerencias.</p>
+    <div class="row">
+      <label>código</label>
+      <input id="g_codigo" class="grow" value="CUN-MED">
+      <button onclick="getDestino(this)">Consultar</button>
+    </div>
+    <pre></pre>
+  </div>
+
+  <div class="endpoint">
+    <div class="row">
+      <span class="method mcp">tool</span>
+      <span class="path">scrape_destino</span>
+    </div>
+    <p class="desc">Descarga + limpia + extrae (OpenAI) un destino, lo guarda en la BD y devuelve markdown. Hace una llamada real a OpenAI; tarda unos segundos.</p>
+    <div class="row">
+      <label>url</label>
+      <input id="s_url" class="grow" value="https://avioa.co/destinos/san-andres-med/">
+    </div>
+    <div class="row">
+      <label>nombre</label>
+      <input id="s_nombre" class="grow" value="San Andrés">
+    </div>
+    <div class="row">
+      <label>código</label>
+      <input id="s_codigo" class="grow" value="SAI-MED">
+      <button onclick="scrapear(this)">Scrapear y guardar</button>
+    </div>
+    <pre></pre>
   </div>
 
   <script>
     function salida(boton) { return boton.closest('.endpoint').querySelector('pre'); }
 
+    // --- REST -------------------------------------------------------------
     async function pedir(ruta, opciones, boton) {
       const out = salida(boton);
       out.textContent = 'Cargando…';
@@ -134,6 +169,52 @@
       user_hash: q_hash.value, message: q_text.value, message_channel: q_channel.value,
       user_data: { nombre: q_name.value, telefono: q_phone.value },
     }), b);
+
+    // --- MCP (Streamable HTTP) -------------------------------------------
+    // Mini-cliente: initialize → notifications/initialized → tools/call.
+    const MCP_URL = '/mcp/';
+    const MCP_HEADERS = { 'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream' };
+
+    function parseSSE(body) {
+      const datas = body.split('\n').filter(l => l.startsWith('data:')).map(l => l.slice(5).trim());
+      return datas.length ? JSON.parse(datas[datas.length - 1]) : {};
+    }
+
+    async function mcpCall(name, args) {
+      const init = await fetch(MCP_URL, { method: 'POST', headers: MCP_HEADERS, body: JSON.stringify({
+        jsonrpc: '2.0', id: 1, method: 'initialize',
+        params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'index.html', version: '1' } },
+      })});
+      const sid = init.headers.get('Mcp-Session-Id');
+      await init.text();
+      const h = sid ? { ...MCP_HEADERS, 'Mcp-Session-Id': sid } : MCP_HEADERS;
+      await fetch(MCP_URL, { method: 'POST', headers: h, body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) });
+      const res = await fetch(MCP_URL, { method: 'POST', headers: h, body: JSON.stringify({
+        jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args },
+      })});
+      const msg = parseSSE(await res.text());
+      if (msg.error) throw new Error(msg.error.message || JSON.stringify(msg.error));
+      const r = msg.result || {};
+      const text = (r.content || []).map(c => c.text).join('\n');
+      if (r.isError) throw new Error(text || 'tool error');
+      return text;
+    }
+
+    async function pedirMcp(name, args, boton) {
+      const out = salida(boton);
+      boton.disabled = true;
+      out.textContent = 'Cargando…';
+      try {
+        out.textContent = await mcpCall(name, args);
+      } catch (e) {
+        out.textContent = '⚠️ ' + e.message;
+      } finally {
+        boton.disabled = false;
+      }
+    }
+
+    const getDestino = (b) => pedirMcp('get_destino', { codigo: g_codigo.value }, b);
+    const scrapear = (b) => pedirMcp('scrape_destino', { url: s_url.value, nombre: s_nombre.value, codigo: s_codigo.value }, b);
   </script>
 </body>
 </html>
