@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     quantum_url: str = ""
     quantum_api_key: str = ""
 
+    # OpenAI
+    openai_api_key: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

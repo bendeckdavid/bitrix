@@ -4,4 +4,5 @@ __pycache__/
 .env
 tokens.json
 bot.json
+destinos.json
 logo.png
