@@ -151,6 +151,60 @@
   <div class="endpoint">
     <div class="row">
       <span class="method mcp">tool</span>
+      <span class="path">buscar_hoteles</span>
+    </div>
+    <p class="desc">Cotiza hoteles en vivo en Travel Compositor (httpx, sin navegador): devuelve los más baratos (precio COP total, valoración, régimen) y el enlace para ver todo y reservar.</p>
+    <div class="row">
+      <label>ciudad</label>
+      <input id="bh_ciudad" class="grow" value="Bogotá">
+    </div>
+    <div class="row">
+      <label>entrada</label>
+      <input id="bh_entrada" class="grow" value="2026-07-01">
+      <label>salida</label>
+      <input id="bh_salida" class="grow" value="2026-07-03">
+    </div>
+    <div class="row">
+      <label>adultos</label>
+      <input id="bh_adultos" class="grow" type="number" min="1" value="2">
+      <label>nº</label>
+      <input id="bh_n" class="grow" type="number" min="1" max="15" value="5">
+      <button onclick="buscarHoteles(this)">Buscar hoteles</button>
+    </div>
+    <pre></pre>
+  </div>
+
+  <div class="endpoint">
+    <div class="row">
+      <span class="method mcp">tool</span>
+      <span class="path">buscar_paquetes</span>
+    </div>
+    <p class="desc">Cotiza paquetes vuelo+hotel en vivo (httpx, sin navegador): precio del paquete desde por persona, vuelo incluido, opciones de hotel y enlace para armarlo. Niños = edades separadas por coma.</p>
+    <div class="row">
+      <label>origen</label>
+      <input id="bp_origen" class="grow" value="Bogotá">
+      <label>destino</label>
+      <input id="bp_destino" class="grow" value="Cali">
+    </div>
+    <div class="row">
+      <label>ida</label>
+      <input id="bp_ida" class="grow" value="2026-07-05">
+      <label>vuelta</label>
+      <input id="bp_vuelta" class="grow" value="2026-07-09">
+    </div>
+    <div class="row">
+      <label>adultos</label>
+      <input id="bp_adultos" class="grow" type="number" min="1" value="2">
+      <label>niños</label>
+      <input id="bp_ninos" class="grow" value="10,12">
+      <button onclick="buscarPaquetes(this)">Buscar paquetes</button>
+    </div>
+    <pre></pre>
+  </div>
+
+  <div class="endpoint">
+    <div class="row">
+      <span class="method mcp">tool</span>
       <span class="path">scrape_destino</span>
     </div>
     <p class="desc">Descarga + limpia + extrae (OpenAI) un destino, lo guarda en la BD y devuelve markdown. Hace una llamada real a OpenAI; tarda unos segundos.</p>
@@ -247,6 +301,17 @@
       origen: bv_origen.value, destino: bv_destino.value,
       fecha_ida: bv_ida.value, fecha_retorno: bv_retorno.value,
       adultos: Number(bv_adultos.value), n: Number(bv_n.value),
+    }, b);
+    const buscarHoteles = (b) => pedirMcp('buscar_hoteles', {
+      ciudad: bh_ciudad.value,
+      fecha_entrada: bh_entrada.value, fecha_salida: bh_salida.value,
+      adultos: Number(bh_adultos.value), n: Number(bh_n.value),
+    }, b);
+    const buscarPaquetes = (b) => pedirMcp('buscar_paquetes', {
+      origen: bp_origen.value, destino: bp_destino.value,
+      fecha_ida: bp_ida.value, fecha_vuelta: bp_vuelta.value,
+      adultos: Number(bp_adultos.value),
+      ninos_edades: bp_ninos.value.split(',').map(s => s.trim()).filter(Boolean).map(Number),
     }, b);
   </script>
 </body>
