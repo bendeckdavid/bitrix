@@ -123,6 +123,34 @@
   <div class="endpoint">
     <div class="row">
       <span class="method mcp">tool</span>
+      <span class="path">buscar_vuelos</span>
+    </div>
+    <p class="desc">Cotiza vuelos en vivo en Travel Compositor (httpx, sin navegador): devuelve los más baratos (precio COP, horarios, aerolínea) y el enlace para ver todo y reservar. Retorno vacío = solo ida.</p>
+    <div class="row">
+      <label>origen</label>
+      <input id="bv_origen" class="grow" value="Cali">
+      <label>destino</label>
+      <input id="bv_destino" class="grow" value="Bogotá">
+    </div>
+    <div class="row">
+      <label>ida</label>
+      <input id="bv_ida" class="grow" value="2026-07-01">
+      <label>retorno</label>
+      <input id="bv_retorno" class="grow" value="2026-07-02">
+    </div>
+    <div class="row">
+      <label>adultos</label>
+      <input id="bv_adultos" class="grow" type="number" min="1" value="2">
+      <label>nº</label>
+      <input id="bv_n" class="grow" type="number" min="1" max="15" value="5">
+      <button onclick="buscarVuelos(this)">Buscar vuelos</button>
+    </div>
+    <pre></pre>
+  </div>
+
+  <div class="endpoint">
+    <div class="row">
+      <span class="method mcp">tool</span>
       <span class="path">scrape_destino</span>
     </div>
     <p class="desc">Descarga + limpia + extrae (OpenAI) un destino, lo guarda en la BD y devuelve markdown. Hace una llamada real a OpenAI; tarda unos segundos.</p>
@@ -215,6 +243,11 @@
 
     const getDestino = (b) => pedirMcp('get_destino', { codigo: g_codigo.value }, b);
     const scrapear = (b) => pedirMcp('scrape_destino', { url: s_url.value, nombre: s_nombre.value, codigo: s_codigo.value }, b);
+    const buscarVuelos = (b) => pedirMcp('buscar_vuelos', {
+      origen: bv_origen.value, destino: bv_destino.value,
+      fecha_ida: bv_ida.value, fecha_retorno: bv_retorno.value,
+      adultos: Number(bv_adultos.value), n: Number(bv_n.value),
+    }, b);
   </script>
 </body>
 </html>

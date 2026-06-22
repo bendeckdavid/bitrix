@@ -35,7 +35,7 @@ def _dentro_de_tabla(node: Node) -> bool:
 def _tabla_markdown(table: Node) -> str:
     filas = []
     for tr in table.css("tr"):
-        celdas = [_clean(c.text()) for c in tr.css("td, th")]
+        celdas = [_clean(c.text(separator=" ")) for c in tr.css("td, th")]
         if any(celdas):
             filas.append(" | ".join(celdas))
     return "\n".join(filas)
@@ -51,7 +51,7 @@ def contenido_a_texto(html: str) -> str:
     for node in post.traverse(include_text=False):
         if node.tag not in ("h1", "h2", "h3", "h4", "h5", "p") or _dentro_de_tabla(node):
             continue
-        texto = _clean(node.text())
+        texto = _clean(node.text(separator=" "))
         if not texto:
             continue
         if any(c in texto.lower() for c in _CORTES):
