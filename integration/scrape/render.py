@@ -25,14 +25,11 @@ def to_markdown(d: dict) -> str:
         out.append(f"**Importante:** {d['aclaraciones']}")
 
     if d["hoteles"]:
-        out.append("\n## Hoteles (precio 'desde' / mínimo — el precio real de cada fecha está en la tabla de tarifas)")
+        out.append("\n## Hoteles (descripción; el precio del ADULTO por fecha está en la tabla de tarifas, NO aquí)")
         for h in d["hoteles"]:
-            desde = [f"adulto desde {_cop(h['precio_adulto'])}"] if h.get("precio_adulto") is not None else []
-            if h.get("precio_nino") is not None:
-                desde.append(f"niño desde {_cop(h['precio_nino'])}")
             linea = f"- **{h['nombre']}**"
-            if desde:
-                linea += " — " + " · ".join(desde)
+            if h.get("precio_nino") is not None:
+                linea += f" — niño desde {_cop(h['precio_nino'])} (mínimo; no varía por fecha en la ficha)"
             if h.get("descripcion"):
                 linea += f" — {h['descripcion']}"
             out.append(linea)

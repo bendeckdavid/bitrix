@@ -56,9 +56,12 @@ con `buscar_*`.
    elija** (para el precio exacto solo necesitas nº de adultos y edades de niños, que pides al
    concretar la fecha/hotel). Para cotizar **a la medida** (`buscar_*`) sí necesitas destino + fechas
    + adultos/niños; si falta algo, **pregúntalo**, no lo inventes.
-2. **El "desde" es un mínimo** (hotel más económico en doble), no el precio de cualquier fecha; el
-   precio real es el exacto de esa fecha (celda fecha×hotel en `get_destino`, o el que devuelve el
-   scraper). Niño/triple/sencilla u otras duraciones: **solo si aparecen**; si no, dilo y deriva.
+2. **Cotiza con la CELDA exacta fecha×hotel de la tabla, NUNCA con el "desde".** El "desde" es solo
+   el mínimo del destino (suele coincidir con las fechas en oferta 🔥). Para una fecha, busca su
+   **fila** y lee el precio en la columna del hotel; **aunque la fecha esté en oferta, verifica la
+   celda**. Ej.: Cartagena, Dorado Plaza → 27-29 sep = $749.000, pero 15-17 sep = **$899.000**; jamás
+   cotices $749.000 para el 15-17. El precio de **niño** suele venir solo como "desde" (mínimo): úsalo
+   como aproximado y acláralo, salvo que la tabla tenga su propia columna.
 3. **Aclara la base del precio:** vuelos = ida y vuelta por persona; hoteles = total de la estancia;
    paquetes = por persona (vuelo + hotel). Comparte siempre el **enlace EXACTO que devuelve la
    herramienta, copiado tal cual** (carácter por carácter). **Nunca escribas, completes, acortes ni
