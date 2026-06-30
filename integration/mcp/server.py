@@ -86,8 +86,8 @@ def _fecha(s: str) -> date:
     raise ToolError(f"Fecha inválida '{s}'. Usa el formato AAAA-MM-DD (p. ej. 2026-07-01).")
 
 
-def _ciudad(texto: str, rol: str) -> dict:
-    c = places.buscar(texto)
+async def _ciudad(texto: str, rol: str) -> dict:
+    c = await places.buscar(texto)
     if c is None:
         raise ToolError(f"No reconozco la ciudad de {rol} '{texto}'. Indica una ciudad o código IATA válido.")
     return c
@@ -112,8 +112,8 @@ async def buscar_vuelos(
     ninos_edades: Annotated[list[int], Field(description="Edad (en años) de cada niño; p. ej. [10, 4].")] = [],
     n: Annotated[int, Field(description="Cuántos vuelos (los más baratos) mostrar.", ge=1, le=15)] = 5,
 ) -> str:
-    o = _ciudad(origen, "origen")
-    d = _ciudad(destino, "destino")
+    o = await _ciudad(origen, "origen")
+    d = await _ciudad(destino, "destino")
     ida = _fecha(fecha_ida)
     ret = _fecha(fecha_retorno) if fecha_retorno.strip() else None
     edades = ninos_edades or None
@@ -157,7 +157,7 @@ async def buscar_hoteles(
     ninos_edades: Annotated[list[int], Field(description="Edad (en años) de cada niño; p. ej. [10, 4].")] = [],
     n: Annotated[int, Field(description="Cuántos hoteles (los más baratos) mostrar.", ge=1, le=15)] = 5,
 ) -> str:
-    c = _ciudad(ciudad, "destino")
+    c = await _ciudad(ciudad, "destino")
     entrada = _fecha(fecha_entrada)
     salida = _fecha(fecha_salida)
     edades = ninos_edades or None
@@ -200,8 +200,8 @@ async def buscar_paquetes(
     ninos_edades: Annotated[list[int], Field(description="Edad (en años) de cada niño; p. ej. [10, 12].")] = [],
     n: Annotated[int, Field(description="Cuántas opciones de hotel mostrar.", ge=1, le=15)] = 5,
 ) -> str:
-    o = _ciudad(origen, "origen")
-    d = _ciudad(destino, "destino")
+    o = await _ciudad(origen, "origen")
+    d = await _ciudad(destino, "destino")
     ida = _fecha(fecha_ida)
     vuelta = _fecha(fecha_vuelta)
     edades = ninos_edades or None

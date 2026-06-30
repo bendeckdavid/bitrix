@@ -68,3 +68,37 @@ async def resultados(qs: dict, build_form, results_path: str, extra: dict | None
             raise CompositorError("La búsqueda no devolvió resultados para esos datos.")
         r = await c.get(f"{BASE}{results_path}", params={"tripId": m.group(1), **(extra or {})})
         return r.text
+
+
+async def autocompletar(texto: str) -> list[tuple[str, str]]:
+    """Sugerencias de destino del propio Travel Compositor: lista de (código, etiqueta).
+
+    El `código` es el que TC acepta en `Destination::<código>` (no siempre es el IATA).
+    """
+    ajax = {
+        **_HDRS,
+        "Faces-Request": "partial/ajax",
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Referer": f"{BASE}/home",
+    }
+    async with httpx.AsyncClient(headers=_HDRS, timeout=30, follow_redirects=True) as c:
+        html = (await c.get(f"{BASE}/home", params={"tripType": "ONLY_FLIGHT", "lang": "ES"})).text
+        cid = re.search(r'id="([^"]*endlocationOnlyFlight)"', html)
+        vs = re.search(r'name="javax\.faces\.ViewState"[^>]*value="([^"]+)"', html)
+        if not cid or not vs:
+            return []
+        cid = cid.group(1)
+        form = {
+            "javax.faces.partial.ajax": "true",
+            "javax.faces.source": cid,
+            "javax.faces.partial.execute": cid,
+            "javax.faces.partial.render": cid,
+            cid: cid,
+            f"{cid}_query": texto,
+            "javax.faces.ViewState": vs.group(1),
+        }
+        r = await c.post(f"{BASE}/home", data=form, headers=ajax)
+    codes = re.findall(r'data-item-value="Destination::([^"]+)"', r.text)
+    labels = re.findall(r'data-item-label="([^"]+)"', r.text)
+    return list(zip(codes, labels))

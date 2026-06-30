@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import json
 import unicodedata
-from difflib import get_close_matches
-from functools import lru_cache
-from pathlib import Path
 
-CITIES_FILE = Path("cities.json")
+from integration.travel import travelc
 
 
 def _norm(s: str) -> str:
@@ -16,30 +12,36 @@ def _norm(s: str) -> str:
     return " ".join(s.split()).lower()
 
 
-@lru_cache
-def _index() -> tuple[dict, dict]:
-    ciudades = json.loads(CITIES_FILE.read_text())
-    por_codigo = {c["code"]: c for c in ciudades}
-    por_nombre: dict[str, dict] = {}
-    for c in ciudades:
-        if c.get("name"):
-            por_nombre.setdefault(_norm(c["name"]), c)
-    return por_codigo, por_nombre
+# Casos ambiguos: TC ordena primero un homónimo extranjero, así que fijamos el correcto.
+_OVERRIDES = {
+    "san andres": ("SAI-123", "San Andrés"),
+    "san andres isla": ("SAI-123", "San Andrés"),
+    "isla de san andres": ("SAI-123", "San Andrés"),
+    "cuba": ("VRA", "Varadero"),
+}
+
+_cache: dict[str, dict | None] = {}
 
 
-def buscar(texto: str) -> dict | None:
-    """Busca una ciudad por nombre o código IATA y devuelve {code, name, country_code}.
+async def buscar(texto: str) -> dict | None:
+    """Resuelve una ciudad/destino al código que usa Travel Compositor (`Destination::<code>`).
 
-    Tolera tildes, mayúsculas y errores leves de escritura (aproxima al nombre más
-    parecido). Si el texto no se parece a ninguna ciudad, devuelve None.
+    Usa el autocompletado propio de TC (fuente de verdad de sus códigos) y devuelve
+    `{code, name}` de la mejor sugerencia, o `None` si no hay ninguna. Los códigos de TC no
+    siempre son el IATA (Santa Marta=SMC, San Andrés=SAI-123, etc.).
     """
     if not texto or not texto.strip():
         return None
-    por_codigo, por_nombre = _index()
-    if texto.strip().upper() in por_codigo:        # código IATA exacto ("BOG", "bog")
-        return por_codigo[texto.strip().upper()]
     q = _norm(texto)
-    if q in por_nombre:                            # nombre exacto ("Bogotá", "bogota")
-        return por_nombre[q]
-    cerca = get_close_matches(q, por_nombre, n=1, cutoff=0.6)  # typo → más cercano
-    return por_nombre[cerca[0]] if cerca else None
+    if q in _OVERRIDES:
+        code, name = _OVERRIDES[q]
+        return {"code": code, "name": name}
+    if q in _cache:
+        return _cache[q]
+    sugerencias = await travelc.autocompletar(texto)
+    res = None
+    if sugerencias:
+        code, label = sugerencias[0]
+        res = {"code": code, "name": label.split(",")[0].strip()}
+    _cache[q] = res
+    return res
