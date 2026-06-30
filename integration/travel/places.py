@@ -14,6 +14,12 @@ def _norm(s: str) -> str:
 
 # Casos ambiguos: TC ordena primero un homónimo extranjero, así que fijamos el correcto.
 _OVERRIDES = {
+    # Orígenes (los únicos de las promos): fijos para que el código no derive (MDE→Rionegro en TC).
+    "medellin": ("MDE", "Medellín"),
+    "mde": ("MDE", "Medellín"),
+    "bogota": ("BOG", "Bogotá"),
+    "bog": ("BOG", "Bogotá"),
+    # Ambiguos: TC ordena primero un homónimo extranjero.
     "san andres": ("SAI-123", "San Andrés"),
     "san andres isla": ("SAI-123", "San Andrés"),
     "isla de san andres": ("SAI-123", "San Andrés"),

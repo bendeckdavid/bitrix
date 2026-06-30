@@ -104,8 +104,8 @@ _BUSCAR_VUELOS_DESC = (
 
 @mcp.tool(description=_BUSCAR_VUELOS_DESC)
 async def buscar_vuelos(
-    origen: Annotated[str, Field(description="Ciudad o código IATA de origen, p. ej. 'Cali' o 'CLO'.")],
-    destino: Annotated[str, Field(description="Ciudad o código IATA de destino, p. ej. 'Bogotá' o 'BOG'.")],
+    origen: Annotated[str, Field(description="Nombre de la ciudad de origen (NO el código), p. ej. 'Medellín' o 'Bogotá'.")],
+    destino: Annotated[str, Field(description="Nombre de la ciudad de destino (NO el código), p. ej. 'Cartagena' o 'Punta Cana'.")],
     fecha_ida: Annotated[str, Field(description="Fecha de ida en formato AAAA-MM-DD.")],
     fecha_retorno: Annotated[str, Field(description="Fecha de retorno AAAA-MM-DD. Vacío = solo ida.")] = "",
     adultos: Annotated[int, Field(description="Número de adultos.", ge=1)] = 1,
@@ -150,7 +150,7 @@ _BUSCAR_HOTELES_DESC = (
 
 @mcp.tool(description=_BUSCAR_HOTELES_DESC)
 async def buscar_hoteles(
-    ciudad: Annotated[str, Field(description="Ciudad o código IATA del hotel, p. ej. 'Bogotá' o 'BOG'.")],
+    ciudad: Annotated[str, Field(description="Nombre de la ciudad del hotel (NO el código), p. ej. 'Cartagena'.")],
     fecha_entrada: Annotated[str, Field(description="Fecha de entrada / check-in en formato AAAA-MM-DD.")],
     fecha_salida: Annotated[str, Field(description="Fecha de salida / check-out en formato AAAA-MM-DD.")],
     adultos: Annotated[int, Field(description="Número de adultos.", ge=1)] = 1,
@@ -192,8 +192,8 @@ _BUSCAR_PAQUETES_DESC = (
 
 @mcp.tool(description=_BUSCAR_PAQUETES_DESC)
 async def buscar_paquetes(
-    origen: Annotated[str, Field(description="Ciudad o código IATA de origen, p. ej. 'Bogotá' o 'BOG'.")],
-    destino: Annotated[str, Field(description="Ciudad o código IATA de destino, p. ej. 'Cali' o 'CLO'.")],
+    origen: Annotated[str, Field(description="Nombre de la ciudad de origen (NO el código), p. ej. 'Medellín' o 'Bogotá'.")],
+    destino: Annotated[str, Field(description="Nombre de la ciudad de destino (NO el código), p. ej. 'Cartagena' o 'Punta Cana'.")],
     fecha_ida: Annotated[str, Field(description="Fecha de ida / inicio del viaje en formato AAAA-MM-DD.")],
     fecha_vuelta: Annotated[str, Field(description="Fecha de regreso / fin del viaje en formato AAAA-MM-DD.")],
     adultos: Annotated[int, Field(description="Número de adultos.", ge=1)] = 1,
